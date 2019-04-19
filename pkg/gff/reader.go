@@ -17,9 +17,6 @@ import (
 	"math"
 	"strconv"
 	"unicode/utf8"
-
-	//	"unicode/utf8"
-	"fmt"
 )
 
 type Reader struct {
@@ -48,7 +45,8 @@ func (gr *Reader) ReadAll() (features []*Feature, err error) {
 	for {
 		feature, err := gr.parseFeature()
 		if feature != nil {
-			features = append(features, feature)
+			feat := feature
+			features = append(features, feat)
 		}
 		if err == io.EOF {
 			return features, err
@@ -75,7 +73,6 @@ func (gr *Reader) parseFeature() (*Feature, error) {
 
 	// Return if read error
 	if readErr != nil {
-		fmt.Println(readErr, len(line))
 		if len(line) == 0 && readErr == io.EOF {
 			return nil, io.EOF //EOF is expected, don't bother with error
 		} else if len(line) > 0 && readErr != io.EOF {
@@ -120,14 +117,14 @@ func (gr *Reader) parseFeature() (*Feature, error) {
 		feat.Strand = "."
 	}
 
-	if fld := int8(fields[7][0]); fld > -0 && fld < 3 {
-		feat.Phase = fld
+	if fld, _ := strconv.ParseInt(string(fields[7]), 10, 8); string(fields[7]) != "." && fld >= 0 && fld < 3 {
+		feat.Phase = int8(fld)
 	} else {
 		feat.Phase = MissingPhaseField
 	}
 
+	attributes := map[string]string{}
 	if string(fields[8]) != "." {
-		attributes := make(map[string]string)
 		attrFields := bytes.Split(fields[8], []byte{';'})
 		for _, attr := range attrFields {
 			att := bytes.Split(attr, []byte{'='})
@@ -135,8 +132,8 @@ func (gr *Reader) parseFeature() (*Feature, error) {
 				attributes[string(att[0])] = string(att[1])
 			}
 		}
-		feat.Attributes = attributes
 	}
+	feat.Attributes = attributes
 
 	return feat, readErr
 }
