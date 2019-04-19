@@ -10,7 +10,6 @@
 package gff
 
 import (
-	"bio-format-tools-go"
 	"bufio"
 	"bytes"
 	"errors"
@@ -41,11 +40,26 @@ func NewReader(r io.Reader) *Reader {
 	return &Reader{buf, LineNumber, r}
 }
 
-func (gr *Reader) Read() (*bio_format_tools_go.Feature, error) {
+func (gr *Reader) Read() (*Feature, error) {
 	return gr.parseFeature()
 }
 
-func (gr *Reader) parseFeature() (*bio_format_tools_go.Feature, error) {
+func (gr *Reader) ReadAll() (features []*Feature, err error) {
+	for {
+		feature, err := gr.parseFeature()
+		if feature != nil {
+			features = append(features, feature)
+		}
+		if err == io.EOF {
+			return features, err
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+}
+
+func (gr *Reader) parseFeature() (*Feature, error) {
 	var line []byte
 	var readErr error
 	// Read next line(s), skipping comments
@@ -77,7 +91,7 @@ func (gr *Reader) parseFeature() (*bio_format_tools_go.Feature, error) {
 	}
 
 	// process feature
-	var feat = new(bio_format_tools_go.Feature)
+	var feat = new(Feature)
 	feat.Seqid = string(fields[0])
 	feat.Source = string(fields[1])
 	feat.Type = string(fields[2])
