@@ -52,7 +52,7 @@ func (gr *Reader) ReadAll() (features []*Feature, err error) {
 			return features, err
 		}
 		if err != nil {
-			return nil, err
+			return features, err
 		}
 	}
 }
@@ -64,10 +64,11 @@ func (gr *Reader) parseFeature() (*Feature, error) {
 	for readErr == nil {
 		gr.LineNumber++
 		line, readErr = gr.buf.ReadBytes('\n')
-		if firstRune, _ := utf8.DecodeRune(line); firstRune == '#' {
+		if firstRune, _ := utf8.DecodeRune(line); firstRune == '#' || bytes.TrimSpace(line) == nil {
 			line = nil
 			continue //skip comments/pragma for now
 		}
+
 		break
 	}
 
@@ -129,7 +130,7 @@ func (gr *Reader) parseFeature() (*Feature, error) {
 		for _, attr := range attrFields {
 			att := bytes.Split(attr, []byte{'='})
 			if len(att) == 2 {
-				attributes[string(att[0])] = string(att[1])
+				attributes[string(bytes.TrimSpace(att[0]))] = string(bytes.TrimSpace(att[1])) //Clean leading and trailing whitespace
 			}
 		}
 	}
