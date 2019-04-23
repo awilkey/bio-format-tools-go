@@ -87,7 +87,14 @@ func (f *Feature) EndOne() uint64 {
 func (f *Feature) String() string {
 	var start, end, score, phase, attributes string
 	start = strconv.FormatUint(f.Start, 10)
-	end = "."
+	if start == "0" {
+		start = "."
+	}
+
+	end = strconv.FormatUint(f.End, 10)
+	if end == "0" {
+		end = "."
+	}
 
 	if f.Score == MissingScoreField {
 		score = "."

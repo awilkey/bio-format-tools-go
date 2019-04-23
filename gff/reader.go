@@ -132,14 +132,19 @@ func (gr *Reader) parseFeature() (*Feature, error) {
 	feat.Seqid = string(fields[0])
 	feat.Source = string(fields[1])
 	feat.Type = string(fields[2])
+
 	feat.Start, _ = strconv.ParseUint(string(fields[3]), 10, 64)
+
 	feat.End, _ = strconv.ParseUint(string(fields[4]), 10, 64)
+
 	if fld := string(fields[5]); fld != "." {
 		feat.Score, _ = strconv.ParseFloat(fld, 64)
 	} else {
 		feat.Score = MissingScoreField
 	}
+
 	feat.Strand = string(fields[6])
+
 	if fld, _ := strconv.ParseInt(string(fields[7]), 10, 8); string(fields[7]) != "." && fld >= 0 && fld < 3 {
 		feat.Phase = int8(fld)
 	} else {
