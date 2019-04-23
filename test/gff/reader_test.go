@@ -1,8 +1,8 @@
 package gff_test
 
 import (
-	"bio-format-tools-go/pkg/gff"
 	"errors"
+	"github.com/awilkey/bio-format-tools-go/pkg/gff"
 	"io"
 	"math"
 	"reflect"
@@ -49,6 +49,20 @@ func TestRead(t *testing.T) {
 	}, {
 		Name: "ShortField",
 		Input: "Scaffold_102	EVM	CDS	6452	6485	1e20	+	2",
+		Output: gff.Feature{
+			Seqid:  "Scaffold_102",
+			Source: "EVM",
+			Type:   "CDS",
+			Start:  6452,
+			End:    6485,
+			Score:  1e+20,
+			Strand: "+",
+			Phase:  2,
+		},
+		Error: io.EOF,
+	}, {
+		Name: "ErrorShortField",
+		Input: "Scaffold_102	EVM	CDS	6452	6485	1e20	+",
 		Error: errors.New("wrong number of fields"),
 	}, {
 		Name: "TooManyField",
@@ -120,6 +134,22 @@ func TestReadAll(t *testing.T) {
 	}, {
 		Name: "ShortField",
 		Input: "Scaffold_102	EVM	CDS	6452	6485	1e20	+	2",
+		Output: []gff.Feature{
+			{
+				Seqid:  "Scaffold_102",
+				Source: "EVM",
+				Type:   "CDS",
+				Start:  6452,
+				End:    6485,
+				Score:  1e+20,
+				Strand: "+",
+				Phase:  2,
+			},
+		},
+		Error: io.EOF,
+	}, {
+		Name: "ErrorShortField",
+		Input: "Scaffold_102	EVM	CDS	6452	6485	1e20	+",
 		Error: errors.New("wrong number of fields"),
 	}, {
 		Name: "TooManyField",
@@ -247,9 +277,37 @@ Scaffold_102	EVM	CDS	6452	6485	.	+	2	ID=CDS705.2;Parent=mRNA906`,
 `,
 		Error: io.EOF,
 	}, {
-		Name: "ValidAndInvalidFeature",
+		Name: "FullAndShortFeature",
 		Input: `Scaffold_102	EVM	CDS	6452	6485	.	+	2	ID=CDS705.1;Parent=mRNA906
 Scaffold_102	EVM	CDS	6452	6485	.	+	2`,
+		Output: []gff.Feature{
+			{
+				Seqid:      "Scaffold_102",
+				Source:     "EVM",
+				Type:       "CDS",
+				Start:      6452,
+				End:        6485,
+				Score:      math.MaxFloat64,
+				Strand:     "+",
+				Phase:      2,
+				Attributes: map[string]string{"ID": "CDS705.1", "Parent": "mRNA906"},
+			},
+			{
+				Seqid:  "Scaffold_102",
+				Source: "EVM",
+				Type:   "CDS",
+				Start:  6452,
+				End:    6485,
+				Score:  math.MaxFloat64,
+				Strand: "+",
+				Phase:  2,
+			},
+		},
+		Error: io.EOF,
+	}, {
+		Name: "FullAndTooShortFeature",
+		Input: `Scaffold_102	EVM	CDS	6452	6485	.	+	2	ID=CDS705.1;Parent=mRNA906
+Scaffold_102	EVM	CDS	6452	6485	.	+`,
 		Output: []gff.Feature{
 			{
 				Seqid:      "Scaffold_102",
