@@ -1,8 +1,7 @@
-package gff_test
+package gff
 
 import (
 	"errors"
-	"github.com/awilkey/bio-format-tools-go/pkg/gff"
 	"io"
 	"math"
 	"reflect"
@@ -14,12 +13,12 @@ func TestRead(t *testing.T) {
 	tests := []struct {
 		Name   string
 		Input  string
-		Output gff.Feature
+		Output Feature
 		Error  error
 	}{{
 		Name: "Full",
 		Input: "Scaffold_102	EVM	CDS	6452	6485	1e20	+	2	ID=CDS705;Parent=mRNA906",
-		Output: gff.Feature{
+		Output: Feature{
 			Seqid:      "Scaffold_102",
 			Source:     "EVM",
 			Type:       "CDS",
@@ -34,7 +33,7 @@ func TestRead(t *testing.T) {
 	}, {
 		Name: "Empty",
 		Input: ".	.	.	.	.	.	.	.	.",
-		Output: gff.Feature{
+		Output: Feature{
 			Seqid:      ".",
 			Source:     ".",
 			Type:       ".",
@@ -49,7 +48,7 @@ func TestRead(t *testing.T) {
 	}, {
 		Name: "ShortField",
 		Input: "Scaffold_102	EVM	CDS	6452	6485	1e20	+	2",
-		Output: gff.Feature{
+		Output: Feature{
 			Seqid:  "Scaffold_102",
 			Source: "EVM",
 			Type:   "CDS",
@@ -80,7 +79,7 @@ func TestRead(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			r := gff.NewReader(strings.NewReader(tt.Input))
+			r := NewReader(strings.NewReader(tt.Input))
 			out, err := r.Read()
 			if !reflect.DeepEqual(err, tt.Error) {
 				t.Errorf("Read() error: unexpected error\ngot \t%v\nwant \t%v", err, tt.Error)
@@ -95,12 +94,12 @@ func TestReadAll(t *testing.T) {
 	tests := []struct {
 		Name   string
 		Input  string
-		Output []gff.Feature
+		Output []Feature
 		Error  error
 	}{{
 		Name: "Full",
 		Input: "Scaffold_102	EVM	CDS	6452	6485	1e20	+	2	ID=CDS705;Parent=mRNA906",
-		Output: []gff.Feature{
+		Output: []Feature{
 			{
 				Seqid:      "Scaffold_102",
 				Source:     "EVM",
@@ -117,7 +116,7 @@ func TestReadAll(t *testing.T) {
 	}, {
 		Name: "Empty",
 		Input: ".	.	.	.	.	.	.	.	.",
-		Output: []gff.Feature{
+		Output: []Feature{
 			{
 				Seqid:      ".",
 				Source:     ".",
@@ -134,7 +133,7 @@ func TestReadAll(t *testing.T) {
 	}, {
 		Name: "ShortField",
 		Input: "Scaffold_102	EVM	CDS	6452	6485	1e20	+	2",
-		Output: []gff.Feature{
+		Output: []Feature{
 			{
 				Seqid:  "Scaffold_102",
 				Source: "EVM",
@@ -167,7 +166,7 @@ func TestReadAll(t *testing.T) {
 		Name: "MultipleFields",
 		Input: `Scaffold_102	EVM	CDS	6452	6485	.	+	2	ID=CDS705.1;Parent=mRNA906
 Scaffold_102	EVM	CDS	6452	6485	.	+	2	ID=CDS705.2;Parent=mRNA906`,
-		Output: []gff.Feature{
+		Output: []Feature{
 			{
 				Seqid:      "Scaffold_102",
 				Source:     "EVM",
@@ -197,7 +196,7 @@ Scaffold_102	EVM	CDS	6452	6485	.	+	2	ID=CDS705.2;Parent=mRNA906`,
 		Input: `#This is a comment.
 Scaffold_102	EVM	CDS	6452	6485	.	+	2	ID=CDS705.1;Parent=mRNA906
 Scaffold_102	EVM	CDS	6452	6485	.	+	2	ID=CDS705.2;Parent=mRNA906`,
-		Output: []gff.Feature{
+		Output: []Feature{
 			{
 				Seqid:      "Scaffold_102",
 				Source:     "EVM",
@@ -227,7 +226,7 @@ Scaffold_102	EVM	CDS	6452	6485	.	+	2	ID=CDS705.2;Parent=mRNA906`,
 		Input: `Scaffold_102	EVM	CDS	6452	6485	.	+	2	ID=CDS705.1;Parent=mRNA906
 
 Scaffold_102	EVM	CDS	6452	6485	.	+	2	ID=CDS705.2;Parent=mRNA906`,
-		Output: []gff.Feature{
+		Output: []Feature{
 			{
 				Seqid:      "Scaffold_102",
 				Source:     "EVM",
@@ -256,7 +255,7 @@ Scaffold_102	EVM	CDS	6452	6485	.	+	2	ID=CDS705.2;Parent=mRNA906`,
 		Name: "CommentAndField",
 		Input: `#This is a comment
 Scaffold_102	EVM	CDS	6452	6485	.	+	2	ID=CDS705.2;Parent=mRNA906`,
-		Output: []gff.Feature{
+		Output: []Feature{
 			{
 				Seqid:      "Scaffold_102",
 				Source:     "EVM",
@@ -280,7 +279,7 @@ Scaffold_102	EVM	CDS	6452	6485	.	+	2	ID=CDS705.2;Parent=mRNA906`,
 		Name: "FullAndShortFeature",
 		Input: `Scaffold_102	EVM	CDS	6452	6485	.	+	2	ID=CDS705.1;Parent=mRNA906
 Scaffold_102	EVM	CDS	6452	6485	.	+	2`,
-		Output: []gff.Feature{
+		Output: []Feature{
 			{
 				Seqid:      "Scaffold_102",
 				Source:     "EVM",
@@ -308,7 +307,7 @@ Scaffold_102	EVM	CDS	6452	6485	.	+	2`,
 		Name: "FullAndTooShortFeature",
 		Input: `Scaffold_102	EVM	CDS	6452	6485	.	+	2	ID=CDS705.1;Parent=mRNA906
 Scaffold_102	EVM	CDS	6452	6485	.	+`,
-		Output: []gff.Feature{
+		Output: []Feature{
 			{
 				Seqid:      "Scaffold_102",
 				Source:     "EVM",
@@ -326,9 +325,9 @@ Scaffold_102	EVM	CDS	6452	6485	.	+`,
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			r := gff.NewReader(strings.NewReader(tt.Input))
+			r := NewReader(strings.NewReader(tt.Input))
 			out, err := r.ReadAll()
-			var res []gff.Feature
+			var res []Feature
 			for _, of := range out {
 				res = append(res, *of)
 			}

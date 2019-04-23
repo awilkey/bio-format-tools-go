@@ -1,8 +1,7 @@
-package gff_test
+package gff
 
 import (
 	"bytes"
-	"github.com/awilkey/bio-format-tools-go/pkg/gff"
 	"math"
 	"testing"
 )
@@ -10,11 +9,11 @@ import (
 func TestWrite(t *testing.T) {
 	tests := []struct {
 		Name   string
-		Input  gff.Feature
+		Input  Feature
 		Output string
 	}{{
 		Name: "Full",
-		Input: gff.Feature{
+		Input: Feature{
 			Seqid:      "Scaffold_102",
 			Source:     "EVM",
 			Type:       "CDS",
@@ -28,7 +27,7 @@ func TestWrite(t *testing.T) {
 		Output: "##gff-version 3.2.1\nScaffold_102\tEVM\tCDS\t6452\t6485\t1.1e+20\t+\t2\tID=CDS705;Parent=mRNA906\n",
 	}, {
 		Name: "Empty",
-		Input: gff.Feature{
+		Input: Feature{
 			Seqid:      ".",
 			Source:     ".",
 			Type:       ".",
@@ -39,13 +38,13 @@ func TestWrite(t *testing.T) {
 			Phase:      3,
 			Attributes: map[string]string{},
 		},
-		Output: "##gff-version 3.2.1\n.\t.\t.\t.\t.\t.\t.\t.\t.\n",
+		Output: "##gff-version 3.2.1\n.\t.\t.\t.\t.\t.\t.\t.\n",
 	}}
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			var b bytes.Buffer
-			r, _ := gff.NewWriter(&b)
+			r, _ := NewWriter(&b)
 			r.WriteFeature(&tt.Input)
 			got := b.String()
 			if got != tt.Output {
@@ -58,11 +57,11 @@ func TestWrite(t *testing.T) {
 func TestWriteAll(t *testing.T) {
 	tests := []struct {
 		Name   string
-		Input  []gff.Feature
+		Input  []Feature
 		Output string
 	}{{
 		Name: "Full",
-		Input: []gff.Feature{
+		Input: []Feature{
 			{
 				Seqid:      "Scaffold_102",
 				Source:     "EVM",
@@ -78,7 +77,7 @@ func TestWriteAll(t *testing.T) {
 		Output: "##gff-version 3.2.1\nScaffold_102\tEVM\tCDS\t6452\t6485\t1e+20\t+\t2\tID=CDS705;Parent=mRNA906\n",
 	}, {
 		Name: "Empty",
-		Input: []gff.Feature{
+		Input: []Feature{
 			{
 				Seqid:      ".",
 				Source:     ".",
@@ -91,10 +90,10 @@ func TestWriteAll(t *testing.T) {
 				Attributes: map[string]string{},
 			},
 		},
-		Output: "##gff-version 3.2.1\n.\t.\t.\t.\t.\t.\t.\t.\t.\n",
+		Output: "##gff-version 3.2.1\n.\t.\t.\t.\t.\t.\t.\t.\n",
 	}, {
 		Name: "MultipleFields",
-		Input: []gff.Feature{
+		Input: []Feature{
 			{
 				Seqid:      "Scaffold_103",
 				Source:     "EVM",
@@ -124,8 +123,8 @@ func TestWriteAll(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			var b bytes.Buffer
-			r, _ := gff.NewWriter(&b)
-			var in []*gff.Feature
+			r, _ := NewWriter(&b)
+			var in []*Feature
 			for i := range tt.Input {
 				in = append(in, &tt.Input[i])
 			}

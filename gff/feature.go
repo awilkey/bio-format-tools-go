@@ -4,7 +4,6 @@
 package gff
 
 import (
-	"bio-format-tools-go/pkg/gff"
 	"bytes"
 	"fmt"
 	"math"
@@ -87,32 +86,23 @@ func (f *Feature) EndOne() uint64 {
 // String returns the string representation of the gff3 feature
 func (f *Feature) String() string {
 	var start, end, score, phase, attributes string
-	if f.Start == gff.MissingPosField {
-		start = "."
-	} else {
-		start = strconv.FormatUint(f.Start, 10)
-	}
+	start = strconv.FormatUint(f.Start, 10)
+	end = "."
 
-	if f.End == gff.MissingPosField {
-		end = "."
-	} else {
-		end = strconv.FormatUint(f.End, 10)
-	}
-
-	if f.Score == gff.MissingValueField {
+	if f.Score == MissingScoreField {
 		score = "."
 	} else {
 		score = strconv.FormatFloat(f.Score, 'e', -1, 64)
 	}
 
-	if p := strconv.Itoa(int(f.Phase)); p == strconv.Itoa(gff.MissingPhaseField) {
+	if p := strconv.Itoa(int(f.Phase)); p == strconv.Itoa(MissingPhaseField) {
 		phase = "."
 	} else {
 		phase = p
 	}
 
-	if len(f.Attributes) == 0 {
-		attributes = "."
+	if len(f.Attributes) == 0 { //Attributes is an optional column
+		return fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s", f.Seqid, f.Source, f.Type, start, end, score, f.Strand, phase)
 	} else {
 		b := new(bytes.Buffer)
 		var k []string
@@ -125,7 +115,6 @@ func (f *Feature) String() string {
 		}
 		attributes = b.String()
 		attributes = strings.TrimRight(attributes, ";")
+		return fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s", f.Seqid, f.Source, f.Type, start, end, score, f.Strand, phase, attributes)
 	}
-
-	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s", f.Seqid, f.Source, f.Type, start, end, score, f.Strand, phase, attributes)
 }
