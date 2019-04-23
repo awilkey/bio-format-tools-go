@@ -3,6 +3,16 @@
 
 package gff
 
+import (
+	"bio-format-tools-go/pkg/gff"
+	"bytes"
+	"fmt"
+	"math"
+	"sort"
+	"strconv"
+	"strings"
+)
+
 // A Feature that represents a single line of a gff3 file
 //
 // By specification, coordinates are one-based, and any undefined
@@ -48,22 +58,74 @@ type Feature struct {
 	Attributes map[string]string
 }
 
-// Explicit start in zero  base coordinate systems
+// Column s6 (score) allows for an undefined value "."
+const MissingScoreField = math.MaxFloat64
+
+// Column  8 (score) allows for an undefined value "."
+const MissingPhaseField = 3
+
+// StartZero returns Feature.Start in zero based coordinate systems
 func (f *Feature) StartZero() uint64 {
 	return f.Start - 1
 }
 
-// Explicit end in zero  base coordinate systems
+// EndZero returns Feature.End in zero based coordinate systems
 func (f *Feature) EndZero() uint64 {
 	return f.End - 1
 }
 
-// Explicit start in one based coordinate systems (gff3 spec default)
+// StartOne returns Feature.Start in one based coordinate systems (gff3 spec default)
 func (f *Feature) StartOne() uint64 {
 	return f.Start
 }
 
-// Explicit end in one based coordinate systems (gff3 spec default)
+// EndOne returns Feature.End in one based coordinate systems (gff3 spec default)
 func (f *Feature) EndOne() uint64 {
 	return f.End
+}
+
+// String returns the string representation of the gff3 feature
+func (f *Feature) String() string {
+	var start, end, score, phase, attributes string
+	if f.Start == gff.MissingPosField {
+		start = "."
+	} else {
+		start = strconv.FormatUint(f.Start, 10)
+	}
+
+	if f.End == gff.MissingPosField {
+		end = "."
+	} else {
+		end = strconv.FormatUint(f.End, 10)
+	}
+
+	if f.Score == gff.MissingValueField {
+		score = "."
+	} else {
+		score = strconv.FormatFloat(f.Score, 'e', -1, 64)
+	}
+
+	if p := strconv.Itoa(int(f.Phase)); p == strconv.Itoa(gff.MissingPhaseField) {
+		phase = "."
+	} else {
+		phase = p
+	}
+
+	if len(f.Attributes) == 0 {
+		attributes = "."
+	} else {
+		b := new(bytes.Buffer)
+		var k []string
+		for key := range f.Attributes {
+			k = append(k, key)
+		}
+		sort.Strings(k)
+		for _, key := range k {
+			_, _ = fmt.Fprintf(b, "%s=%s;", key, f.Attributes[key])
+		}
+		attributes = b.String()
+		attributes = strings.TrimRight(attributes, ";")
+	}
+
+	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s", f.Seqid, f.Source, f.Type, start, end, score, f.Strand, phase, attributes)
 }
