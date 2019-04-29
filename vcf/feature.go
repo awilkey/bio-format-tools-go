@@ -204,8 +204,12 @@ func (f *Feature) SingleGenotype(gen string, order map[string]int) (*Genotype, e
 
 						parsedGT.GT = make([]int, len(gt))
 						for i := range gt {
-							val, _ := strconv.Atoi(string(gt[i]))
-							parsedGT.GT[i] = val
+							if string(gt[i]) == "." {
+								parsedGT.GT[i] = -1
+							} else {
+								val, _ := strconv.Atoi(string(gt[i]))
+								parsedGT.GT[i] = val
+							}
 						}
 					}
 				}
