@@ -13,7 +13,9 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
+	"strconv"
 )
 
 type Reader struct {
@@ -116,10 +118,16 @@ func NewReader(r io.Reader) (*Reader, error) {
 			foundHeader = true
 			header := bytes.Split(line, []byte("\t"))
 			if len(header) < 8 {
-				readErr = errors.New("header has too few columns")
-			} else {
-				h.Genotypes = make(map[string]uint64, len(header)-8)
-				for i, genotype := range header[8:] {
+				readErr = errors.New("header has too few columns to be minimum vcf")
+			} else if len(header) == 9 { //either no genotypes or filter + at least one genotype
+				if string(header[8]) != "FORMAT" {
+					readErr = errors.New("header needs a FORMAT column before adding genotypes")
+				} else {
+					readErr = errors.New("header FORMAT column must be followed by at least one genotype")
+				}
+			} else if len(header) >= 10 {
+				h.Genotypes = make(map[string]uint64, len(header)-9)
+				for i, genotype := range header[9:] {
 					h.Genotypes[string(genotype)] = uint64(i)
 				}
 			}
@@ -202,8 +210,48 @@ func (gr *Reader) ReadAll() (features []*Feature, err error) {
 
 // parseFeature from a VCF line
 func (gr *Reader) parseFeature() (*Feature, error) {
-	var feat Feature
+	var line []byte
 	var readErr error
+
+	gr.LineNumber++
+	line, readErr = gr.buf.ReadBytes('\n')
+
+	fields := bytes.Split(line, []byte{'\t'})
+
+	if len(fields) == 8 || len(fields) == len(gr.Header.Genotypes)+9 { // Error if not enough fields in line
+		err := fmt.Sprintf("too few colums in feature line")
+		return nil, errors.New(err)
+	}
+
+	var feat Feature
+
+	// Populate required fields
+	feat.Chrom = string(fields[0])
+	feat.Pos, _ = strconv.ParseUint(string(fields[1]), 10, 64)
+	feat.Id = string(fields[2])
+	feat.Ref = string(fields[3])
+	alt := bytes.Split(fields[4], []byte{','})
+	feat.Alt = make([]string, 0, len(alt))
+	for i := range alt {
+		feat.Alt[i] = string(alt[i])
+	}
+	feat.Qual, _ = strconv.ParseFloat(string(fields[5]), 64)
+	feat.Filter = string(fields[6])
+	infos := bytes.Split(fields[7], []byte{';'})
+	feat.Info = make(map[string]string, len(infos))
+	for i := range infos {
+		curInf := bytes.Split(infos[i], []byte{'='})
+		feat.Info[string(curInf[0])] = string(curInf[1])
+	}
+
+	if len(fields) > 8 { // if more than eight fields, populate genotype
+		fmts := bytes.Split(fields[8], []byte{','})
+		feat.Format = make(map[int]string, len(fmts))
+		for i := range fmts {
+			feat.Format[i] = string(fmts[i])
+		}
+		feat.Genotypes = fields[9:]
+	}
 
 	return &feat, readErr
 }
