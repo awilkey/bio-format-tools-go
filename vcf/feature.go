@@ -5,7 +5,9 @@ package vcf
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -60,8 +62,10 @@ type Feature struct {
 
 // Genotype represents a single genotype variant in a Feature
 type Genotype struct {
-	GT     []int
-	Fields map[string]string
+	Id       string
+	GT       []int
+	PhasedGT bool
+	Fields   map[string]string
 }
 
 // OptionalToString returns string representation of any meta directive field that isn't
@@ -176,4 +180,64 @@ func (f *Feature) StartOne() uint64 {
 // EndOne returns Feature.End in one based coordinate systems (gff3 spec default)
 func (f *Feature) EndOne() uint64 {
 	return f.StartOne()
+}
+
+//SingleGenotype returns a pointer to a Genotype or an error
+func (f *Feature) SingleGenotype(gen string, header *Header) (*Genotype, error) {
+	if loc, ok := header.Genotypes[gen]; ok { //gen is a valid genotype
+		if preParsed, ok := f.ParsedGenotypes[gen]; ok { //gen has already been accessed for this feature
+			return preParsed, nil
+		} else { //gen needs to be extracted from the info field
+			info := bytes.Split(f.Genotypes[loc], []byte{':'})
+			if len(info) != len(f.Format) { //info is improperly formatted
+				return nil, errors.New("genotype has improperly formatted data")
+			} else {
+				parsedGT := Genotype{PhasedGT: false}
+				parsedGT.Id = gen
+				for key, value := range f.Format {
+					parsedGT.Fields[key] = string(info[value])
+					if key == "GT" {
+						gt := bytes.Split(info[value], []byte{'/', '|'})
+						if len(gt) > 2 {
+							return nil, errors.New("genotype field GT has too many entries")
+						}
+						parsedGT.GT = make([]int, len(gt))
+						for i := range gt {
+							val, _ := strconv.Atoi(string(gt[i]))
+							parsedGT.GT[i] = val
+						}
+						if bytes.ContainsAny(info[value], "|") {
+							parsedGT.PhasedGT = true
+						}
+					}
+				}
+				f.ParsedGenotypes[gen] = &parsedGT
+				return &parsedGT, nil
+			}
+		}
+	} else {
+		return nil, errors.New("genotype not in vcf")
+	}
+}
+
+//MultipleGenotypes returns an array of pointers to genotypes, along with an array of errors
+func (f *Feature) MultipleGenotypes(gens []string, header *Header) ([]*Genotype, []error) {
+	gts := make([]*Genotype, len(gens))
+	errs := make([]error, len(gens))
+	for i, gen := range gens {
+		gt, err := f.SingleGenotype(gen, header)
+		gts[i] = gt
+		errs[i] = err
+	}
+
+	return gts, errs
+}
+
+//AllGenotypes returns an array of pointers to all genotypes, along with any errors
+func (f *Feature) AllGenotypes(header *Header) ([]*Genotype, []error) {
+	gts := make([]string, len(header.Genotypes))
+	for gt, i := range header.Genotypes {
+		gts[i] = gt
+	}
+	return f.MultipleGenotypes(gts, header)
 }
