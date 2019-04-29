@@ -119,16 +119,16 @@ func TestNewReader(t *testing.T) {
 			Genotypes:  map[string]uint64{"NA00001": 0},
 		},
 	}, {
-		Name:  "MetaAndGenotypeNoFormat",
-		Input: "##fileformat=VCFv4.2\n##INFO=<ID=myImputationProgramV3.1>\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tNA00001",
+		Name:  "HeaderGenotypeNoFormat",
+		Input: "##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tNA00001",
 		Error: errors.New("header needs a FORMAT column before adding genotypes"),
 	}, {
-		Name:  "MetaAndGenotypeNoGenotype",
-		Input: "##fileformat=VCFv4.2\n##INFO=<ID=myImputationProgramV3.1>\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT",
+		Name:  "HeaderFormatNoGenotype",
+		Input: "##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT",
 		Error: errors.New("header FORMAT column must be followed by at least one genotype"),
 	}, {
 		Name:  "ShortHeader",
-		Input: "##fileformat=VCFv4.2\n##INFO=<ID=myImputationProgramV3.1>\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER",
+		Input: "##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER",
 		Error: errors.New("header has too few columns to be minimum vcf"),
 	}}
 
@@ -137,7 +137,7 @@ func TestNewReader(t *testing.T) {
 			r, err := NewReader(strings.NewReader(tt.Input))
 			if !reflect.DeepEqual(err, tt.Error) {
 				t.Errorf("Read() error: unexpected error\ngot \t%v\nwant \t%v", err, tt.Error)
-			} else if len(tt.Output.FileFormat) > 0 { // Quick and dirty way to check there is an Output, as
+			} else if err == nil && len(tt.Output.FileFormat) > 0 { // Quick and dirty way to check there is an Output, as
 				out := reflect.ValueOf(*r.Header)
 				exp := reflect.ValueOf(tt.Output)
 				for i := 0; i < out.NumField(); i++ {
