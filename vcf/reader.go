@@ -131,6 +131,7 @@ func NewReader(r io.Reader) (*Reader, error) {
 					h.Genotypes[string(genotype)] = uint64(i)
 				}
 			}
+			break
 		} else { //not header or meta, can start parsing actual file
 			break
 		}
@@ -216,10 +217,19 @@ func (gr *Reader) parseFeature() (*Feature, error) {
 	gr.LineNumber++
 	line, readErr = gr.buf.ReadBytes('\n')
 
+	// Return if read error
+	if readErr != nil {
+		if len(line) == 0 && readErr == io.EOF {
+			return nil, io.EOF //EOF is expected, don't bother with error
+		} else if len(line) > 0 && readErr != io.EOF {
+			return nil, readErr //return error
+		}
+	}
+
 	fields := bytes.Split(line, []byte{'\t'})
 
-	if len(fields) == 8 || len(fields) == len(gr.Header.Genotypes)+9 { // Error if not enough fields in line
-		err := fmt.Sprintf("too few colums in feature line")
+	if flen := len(fields); flen < 8 || flen == 9 || (flen >= 10 && flen != (len(gr.Header.Genotypes)+1+8)) { // Error if not enough fields in line
+		err := fmt.Sprintf("too few columns in feature line")
 		return nil, errors.New(err)
 	}
 
@@ -230,26 +240,34 @@ func (gr *Reader) parseFeature() (*Feature, error) {
 	feat.Pos, _ = strconv.ParseUint(string(fields[1]), 10, 64)
 	feat.Id = string(fields[2])
 	feat.Ref = string(fields[3])
+
 	alt := bytes.Split(fields[4], []byte{','})
-	feat.Alt = make([]string, 0, len(alt))
+	feat.Alt = make([]string, len(alt))
 	for i := range alt {
 		feat.Alt[i] = string(alt[i])
 	}
+
 	feat.Qual, _ = strconv.ParseFloat(string(fields[5]), 64)
 	feat.Filter = string(fields[6])
+
 	infos := bytes.Split(fields[7], []byte{';'})
 	feat.Info = make(map[string]string, len(infos))
 	for i := range infos {
 		curInf := bytes.Split(infos[i], []byte{'='})
-		feat.Info[string(curInf[0])] = string(curInf[1])
+		if len(curInf) == 1 {
+			feat.Info[string(curInf[0])] = string(curInf[0])
+		} else {
+			feat.Info[string(curInf[0])] = string(curInf[1])
+		}
 	}
 
 	if len(fields) > 8 { // if more than eight fields, populate genotype
-		fmts := bytes.Split(fields[8], []byte{','})
-		feat.Format = make(map[int]string, len(fmts))
+		fmts := bytes.Split(fields[8], []byte{':'})
+		feat.Format = make(map[string]int, len(fmts))
 		for i := range fmts {
-			feat.Format[i] = string(fmts[i])
+			feat.Format[string(fmts[i])] = i
 		}
+
 		feat.Genotypes = fields[9:]
 	}
 

@@ -52,8 +52,8 @@ type Feature struct {
 	Alt             []string
 	Qual            float64
 	Filter          string
-	Format          map[int]string
 	Info            map[string]string
+	Format          map[string]int
 	Genotypes       [][]byte
 	ParsedGenotypes map[string]*Genotype
 }
