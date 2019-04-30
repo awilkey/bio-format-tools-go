@@ -234,7 +234,9 @@ func (gr *Reader) parseFeature() (*Feature, error) {
 	}
 
 	var feat Feature
-
+	for i := range fields { // Trim extra leading/trailing spaces for each field
+		fields[i] = bytes.TrimSpace(fields[i])
+	}
 	// Populate required fields
 	feat.Chrom = string(fields[0])
 	feat.Pos, _ = strconv.ParseUint(string(fields[1]), 10, 64)
@@ -248,17 +250,26 @@ func (gr *Reader) parseFeature() (*Feature, error) {
 	}
 
 	feat.Qual, _ = strconv.ParseFloat(string(fields[5]), 64)
+	if bytes.IndexAny(fields[5], "eE") != -1 {
+		feat.QualFormat = byte('e')
+	} else {
+		feat.QualFormat = byte('f')
+	}
+
 	feat.Filter = string(fields[6])
 
 	infos := bytes.Split(fields[7], []byte{';'})
 	feat.Info = make(map[string]string, len(infos))
+	feat.InfoOrder = make(map[string]int, len(infos))
 	for i := range infos {
+		bytes.TrimSpace(infos[i])
 		curInf := bytes.Split(infos[i], []byte{'='})
 		if len(curInf) == 1 {
 			feat.Info[string(curInf[0])] = string(curInf[0])
 		} else {
 			feat.Info[string(curInf[0])] = string(curInf[1])
 		}
+		feat.InfoOrder[string(curInf[0])] = i
 	}
 
 	if len(fields) > 8 { // if more than eight fields, populate genotype
