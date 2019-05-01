@@ -131,7 +131,7 @@ func NewReader(r io.Reader) (*Reader, error) {
 				h.Genotypes = make(map[string]uint64, len(header)-9)
 				for i, genotype := range header[9:] {
 					if _, ok := h.Genotypes[string(genotype)]; ok {
-						fmt.Println("Duplicate Genotype: ", string(genotype))
+						fmt.Println("Duplicate Genotype: ", string(genotype), "on column ", i+9)
 					}
 					h.Genotypes[string(genotype)] = uint64(i)
 				}
