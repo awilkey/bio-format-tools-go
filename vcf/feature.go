@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -61,6 +62,8 @@ type Feature struct {
 	Genotypes       [][]byte
 	ParsedGenotypes map[string]*Genotype
 }
+
+const MissingQualField = math.MaxFloat64
 
 // Genotype represents a single genotype variant in a Feature
 type Genotype struct {

@@ -231,8 +231,12 @@ func (gr *Reader) parseFeature() (*Feature, error) {
 	fields := bytes.Split(line, []byte{'\t'})
 
 	if flen := len(fields); flen < 8 || flen == 9 || (flen >= 10 && flen != (len(gr.Header.Genotypes)+1+8)) { // Error if not enough fields in line
-		err := fmt.Sprintf("too few columns in feature line")
-		return nil, errors.New(err)
+		l := 8
+		if flen > 8 {
+			l = 8 + 1 + len(gr.Header.Genotypes)
+		}
+		er := fmt.Sprintf("too few columsn in feature line: expected %d have %d", flen, l)
+		return nil, errors.New(er)
 	}
 
 	var feat Feature
@@ -251,7 +255,11 @@ func (gr *Reader) parseFeature() (*Feature, error) {
 		feat.Alt[i] = string(alt[i])
 	}
 
-	feat.Qual, _ = strconv.ParseFloat(string(fields[5]), 64)
+	if string(fields[5]) == "." {
+		feat.Qual = MissingQualField
+	} else {
+		feat.Qual, _ = strconv.ParseFloat(string(fields[5]), 64)
+	}
 	if bytes.IndexAny(fields[5], "eE") != -1 {
 		feat.QualFormat = byte('e')
 	} else {

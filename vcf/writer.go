@@ -49,7 +49,12 @@ func (w *Writer) WriteFeature(f *Feature, h ...*Header) {
 	}
 
 	//Prep QUAL and INFO fields for pretty printing
-	qual := strconv.FormatFloat(f.Qual, f.QualFormat, -1, 64)
+	var qual string
+	if f.Qual == MissingQualField {
+		qual = "."
+	} else {
+		qual = strconv.FormatFloat(f.Qual, f.QualFormat, -1, 64)
+	}
 	info := make([]string, len(f.Info))
 	for key, i := range f.InfoOrder {
 		val := f.Info[key]
