@@ -235,7 +235,7 @@ func (gr *Reader) parseFeature() (*Feature, error) {
 		if flen > 8 {
 			l = 8 + 1 + len(gr.Header.Genotypes)
 		}
-		er := fmt.Sprintf("too few columsn in feature line: expected %d have %d", flen, l)
+		er := fmt.Sprintf("too few columns in feature line: expected %d have %d", flen, l)
 		return nil, errors.New(er)
 	}
 
