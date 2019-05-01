@@ -37,6 +37,8 @@ func NewReader(r io.Reader) (*Reader, error) {
 	for readErr == nil {
 		LineNumber++
 		line, readErr = buf.ReadBytes('\n')
+		line = bytes.TrimSpace(line)
+		line = bytes.Trim(line, "\n")
 		if LineNumber == 1 {
 			metaFields, _, _, err := parseLineToMeta(line)
 			if err != nil || metaFields["FieldType"] != "fileformat" {
@@ -116,6 +118,7 @@ func NewReader(r io.Reader) (*Reader, error) {
 			}
 		} else if bytes.HasPrefix(line, []byte("#")) { //header
 			foundHeader = true
+			line = bytes.TrimSpace(line)
 			header := bytes.Split(line, []byte("\t"))
 			if len(header) < 8 {
 				readErr = errors.New("header has too few columns to be minimum vcf")
