@@ -118,7 +118,6 @@ func NewReader(r io.Reader) (*Reader, error) {
 			}
 		} else if bytes.HasPrefix(line, []byte("#")) { //header
 			foundHeader = true
-			line = bytes.TrimSpace(line)
 			header := bytes.Split(line, []byte("\t"))
 			if len(header) < 8 {
 				readErr = errors.New("header has too few columns to be minimum vcf")
