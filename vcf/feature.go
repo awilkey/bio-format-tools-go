@@ -182,7 +182,7 @@ func (f *Feature) EndOne() uint64 {
 }
 
 //SingleGenotype returns a pointer to a Genotype or an error
-func (f *Feature) SingleGenotype(gen string, order map[string]int) (*Genotype, error) {
+func (f *Feature) SingleGenotype(gen string, order map[string]uint64) (*Genotype, error) {
 	if loc, ok := order[gen]; ok { //gen is a valid genotype
 		if preParsed, ok := f.ParsedGenotypes[gen]; ok { //gen has already been accessed for this feature
 			return preParsed, nil
@@ -228,7 +228,7 @@ func (f *Feature) SingleGenotype(gen string, order map[string]int) (*Genotype, e
 }
 
 //MultipleGenotypes returns an array of pointers to genotypes, along with an array of errors
-func (f *Feature) MultipleGenotypes(gens []string, order map[string]int) ([]*Genotype, []error) {
+func (f *Feature) MultipleGenotypes(gens []string, order map[string]uint64) ([]*Genotype, []error) {
 	gts := make([]*Genotype, len(gens))
 	errs := make([]error, len(gens))
 	for i, gen := range gens {
@@ -240,7 +240,7 @@ func (f *Feature) MultipleGenotypes(gens []string, order map[string]int) ([]*Gen
 }
 
 //AllGenotypes returns an array of pointers to all genotypes, along with any errors
-func (f *Feature) AllGenotypes(order map[string]int) ([]*Genotype, []error) {
+func (f *Feature) AllGenotypes(order map[string]uint64) ([]*Genotype, []error) {
 	gts := make([]string, len(order))
 	for gt, i := range order {
 		gts[i] = gt
